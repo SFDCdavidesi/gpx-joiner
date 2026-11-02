@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Une tus actividades GPX de Garmin en tu navegador, sin subir archivos a un servidor.">
+  <title>GPX Joiner · Une tu recorrido</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <header class="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div>
+        <p class="eyebrow mb-2">TU ACTIVIDAD, SIN LÍMITES</p>
+        <h1 class="text-3xl sm:text-4xl font-bold flex items-center gap-3"><i data-lucide="route" aria-hidden="true"></i> GPX Joiner</h1>
+        <p class="muted mt-3">Varios archivos. Un solo recorrido. Toda tu telemetría.</p>
+      </div>
+      <span class="privacy-badge"><i data-lucide="shield-check" aria-hidden="true"></i> Procesamiento local</span>
+    </header>
+
+    <section class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6" aria-label="Estadísticas del recorrido">
+      <div class="stat"><span>Archivos</span><strong id="stat-files">0</strong></div>
+      <div class="stat"><span>Puntos originales</span><strong id="stat-original">0</strong></div>
+      <div class="stat"><span>Duplicados eliminados</span><strong id="stat-duplicates" class="accent">0</strong></div>
+      <div class="stat"><span>Puntos finales</span><strong id="stat-final">0</strong></div>
+      <div class="stat"><span>Distancia aprox.</span><strong><span id="stat-distance">0</span> <small>km</small></strong></div>
+      <div class="stat"><span>Desnivel positivo</span><strong><span id="stat-ascent">0</span> <small>m</small></strong></div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="space-y-6">
+        <section class="panel p-5" aria-labelledby="upload-title">
+          <h2 id="upload-title" class="text-lg font-semibold mb-4">1. Añade tus actividades</h2>
+          <div id="drop-zone" class="drop-zone">
+            <i data-lucide="cloud-upload" class="mx-auto mb-3" aria-hidden="true"></i>
+            <p class="font-semibold">Arrastra tus archivos GPX aquí</p>
+            <p class="muted text-sm my-2">o selecciónalos desde tu dispositivo</p>
+            <label for="file-input" class="file-button">Seleccionar archivos</label>
+            <input id="file-input" class="sr-only" type="file" accept=".gpx,application/gpx+xml" multiple>
+            <p class="muted text-xs mt-3">GPX 1.1 · Garmin Connect · Hasta 25 MB por archivo</p>
+          </div>
+          <p id="status" role="status" class="muted text-sm mt-4">Añade uno o varios GPX para comenzar.</p>
+          <ul id="errors" class="errors text-sm mt-3" aria-live="polite"></ul>
+          <ul id="file-list" class="space-y-3 mt-4" aria-label="Archivos cargados"></ul>
+        </section>
+
+        <section class="panel p-5" aria-labelledby="export-title">
+          <h2 id="export-title" class="text-lg font-semibold mb-4">2. Exporta tu recorrido</h2>
+          <label class="field-label" for="track-name">Nombre del track</label>
+          <input id="track-name" type="text" value="Mi recorrido unificado" maxlength="200" class="text-input mb-4">
+          <label class="field-label" for="file-name">Nombre del archivo</label>
+          <input id="file-name" type="text" value="recorrido-unificado.gpx" maxlength="150" class="text-input mb-4">
+          <button id="download" type="button" class="download-button w-full" disabled>
+            <i data-lucide="download" aria-hidden="true"></i> Descargar GPX Unificado
+          </button>
+          <p class="muted text-xs mt-3">Se conservan los nodos de los puntos y sus extensiones de sensores. Los waypoints se exportan por separado del track.</p>
+        </section>
+      </div>
+
+      <section class="panel overflow-hidden lg:col-span-2" aria-labelledby="map-title">
+        <div class="p-5 flex flex-wrap items-center justify-between gap-3">
+          <h2 id="map-title" class="text-lg font-semibold">Tu próximo gran recorrido</h2>
+          <div class="flex gap-4 text-xs muted"><span><span class="legend-dot start"></span>Inicio</span><span><span class="legend-dot end"></span>Final</span></div>
+        </div>
+        <div id="map" role="region" aria-label="Mapa interactivo del recorrido"></div>
+        <div class="p-5 text-sm muted space-y-2">
+          <p id="map-summary">El mapa mostrará el track unificado y los waypoints.</p>
+          <p id="warnings" role="status"></p>
+          <p>Orden por fecha y deduplicación por tiempo + latitud + longitud. Las métricas de distancia y desnivel solo incluyen puntos de track.</p>
+        </div>
+      </section>
+    </div>
+    <footer class="muted text-xs mt-8 text-center">
+      Tus GPX no salen de tu navegador. El mapa utiliza teselas de OpenStreetMap y las librerías se cargan desde CDN.
+    </footer>
+  </main>
+</body>
+</html>
